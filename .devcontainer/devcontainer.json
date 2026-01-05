@@ -1,0 +1,24 @@
+{
+    "name": "Greanleaf - Infra",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "features": {
+        "ghcr.io/devcontainers/features/common-utils:2": {
+            "installZsh": true,
+            "configureZshAsDefaultShell": true,
+            "username": "root",
+            "upgradePackages": false
+        }
+    },
+    "remoteUser": "root",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "redhat.ansible",
+                "hashicorp.terraform",
+                "hashicorp.hcl"
+            ]
+        }
+    }
+}
