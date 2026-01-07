@@ -33,3 +33,19 @@ module "database" {
   allocated_storage = 20
   multi_az          = false # No Multi-AZ for dev to save cost
 }
+
+module "efs" {
+  source             = "../../modules/efs"
+  identifier         = "greenleaf-dev"
+  subnet_ids         = module.network.subnet_private_ids
+  security_group_ids = [module.security.efs_sg_id]
+}
+
+module "redis" {
+  source                        = "../../modules/redis"
+  identifier                    = "greenleaf-dev"
+  elasticache_subnet_group_name = module.network.elasticache_subnet_group_name
+  security_group_ids            = [module.security.redis_sg_id]
+  node_type                     = "cache.t3.micro"
+  multi_az                      = false
+}
