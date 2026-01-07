@@ -152,3 +152,13 @@ resource "aws_db_subnet_group" "private" {
     Environment = var.environment
   }
 }
+
+resource "aws_elasticache_subnet_group" "private" {
+  name       = "${var.environment}-elasticache-subnet-group"
+  subnet_ids = aws_subnet.private[*].id
+
+  tags = {
+    Name        = "${var.environment}-elasticache-subnet-group"
+    Environment = var.environment
+  }
+}
