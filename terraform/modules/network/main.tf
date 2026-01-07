@@ -140,6 +140,12 @@ resource "aws_vpc_endpoint" "s3" {
 
   tags = {
     Name        = "${var.environment}-s3-endpoint"
+resource "aws_db_subnet_group" "private" {
+  name       = "${var.environment}-db-subnet-group"
+  subnet_ids = aws_subnet.private[*].id
+
+  tags = {
+    Name        = "${var.environment}-db-subnet-group"
     Environment = var.environment
   }
 }

@@ -13,3 +13,7 @@ output "subnet_private_ids" {
 output "subnet_data_ids" {
   value = aws_subnet.data[*].id
 }
+
+output "db_subnet_group_name" {
+  value = aws_db_subnet_group.private.name
+}
