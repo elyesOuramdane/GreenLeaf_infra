@@ -3,19 +3,9 @@ variable "identifier" {
   type        = string
 }
 
-variable "vpc_id" {
-  description = "VPC ID where the DB will be deployed"
-  type        = string
-}
-
-variable "subnet_ids" {
-  description = "List of subnet IDs for the DB subnet group"
+variable "db_security_group_ids" {
+  description = "List of security group IDs for the RDS instance"
   type        = list(string)
-}
-
-variable "vpc_cidr" {
-  description = "CIDR block of the VPC to allow traffic from"
-  type        = string
 }
 
 variable "instance_class" {
