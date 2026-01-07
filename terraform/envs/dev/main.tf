@@ -5,10 +5,27 @@ module "network" {
   single_nat_gateway = true
 }
 
-# module "compute" {
-#   source = "../../modules/compute"
-#   # vars here
-# }
+module "loadbalancer" {
+  source             = "../../modules/loadbalancer"
+  environment        = "dev"
+  vpc_id             = module.network.vpc_id
+  public_subnet_ids  = module.network.subnet_public_ids
+  security_group_ids = [module.security.alb_sg_id]
+}
+
+module "compute" {
+  source             = "../../modules/compute"
+  environment        = "dev"
+  vpc_id             = module.network.vpc_id
+  private_subnet_ids = module.network.subnet_private_ids
+
+  instance_type        = "t3.small"
+  min_size             = 1
+  desired_capacity     = 1
+  max_size             = 2
+  alb_target_group_arn = module.loadbalancer.target_group_arn
+  security_group_ids   = [module.security.app_sg_id]
+}
 
 
 module "security" {

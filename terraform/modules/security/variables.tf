@@ -12,3 +12,5 @@ variable "vpc_cidr" {
   description = "The VPC CIDR"
   type        = string
 }
+
+
