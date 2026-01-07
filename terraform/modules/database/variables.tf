@@ -8,7 +8,6 @@ variable "db_security_group_ids" {
   type        = list(string)
 }
 
-
 variable "db_subnet_group_name" {
   description = "The name of the DB subnet group"
   type        = string
@@ -17,7 +16,7 @@ variable "db_subnet_group_name" {
 variable "instance_class" {
   description = "RDS instance class"
   type        = string
-  default     = "db.t3.medium"
+  default     = "db.t3.small"
 }
 
 variable "allocated_storage" {

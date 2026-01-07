@@ -1,5 +1,3 @@
-
-
 resource "aws_db_instance" "main" {
   identifier        = "${var.identifier}-db"
   engine            = "mysql"
