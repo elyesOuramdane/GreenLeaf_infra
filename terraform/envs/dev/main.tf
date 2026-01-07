@@ -42,10 +42,10 @@ module "efs" {
 }
 
 module "redis" {
-  source             = "../../modules/redis"
-  identifier         = "greenleaf-dev"
-  subnet_ids         = module.network.subnet_private_ids
-  security_group_ids = [module.security.redis_sg_id]
-  node_type          = "cache.t3.micro"
-  multi_az           = false
+  source                        = "../../modules/redis"
+  identifier                    = "greenleaf-dev"
+  elasticache_subnet_group_name = module.network.elasticache_subnet_group_name
+  security_group_ids            = [module.security.redis_sg_id]
+  node_type                     = "cache.t3.micro"
+  multi_az                      = false
 }
