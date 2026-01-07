@@ -6,8 +6,12 @@ output "public_subnets" {
   value = aws_subnet.public[*].id
 }
 
-output "private_subnets" {
+output "subnet_private_ids" {
   value = aws_subnet.private[*].id
+}
+
+output "subnet_data_ids" {
+  value = aws_subnet.data[*].id
 }
 
 output "db_subnet_group_name" {
