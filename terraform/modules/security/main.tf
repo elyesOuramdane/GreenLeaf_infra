@@ -21,6 +21,10 @@ resource "aws_security_group" "rds" {
   tags = {
     Name = "${var.identifier}-rds-sg"
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_security_group" "app" {
@@ -35,6 +39,24 @@ resource "aws_security_group" "app" {
     to_port         = 80
     protocol        = "tcp"
     security_groups = [aws_security_group.alb.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "greenleaf-app-sg"
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
 resource "aws_security_group" "efs" {
   name        = "${var.identifier}-efs-sg"
   description = "Security group for EFS"
@@ -56,7 +78,11 @@ resource "aws_security_group" "efs" {
   }
 
   tags = {
-    Name = "greenleaf-app-sg"
+    Name = "${var.identifier}-efs-sg"
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
@@ -71,7 +97,11 @@ resource "aws_security_group" "alb" {
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
-    Name = "${var.identifier}-efs-sg"
+
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
@@ -97,5 +127,9 @@ resource "aws_security_group" "redis" {
 
   tags = {
     Name = "${var.identifier}-redis-sg"
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
