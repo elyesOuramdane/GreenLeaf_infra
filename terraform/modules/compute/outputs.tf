@@ -1,7 +1,4 @@
-output "app_sg_id" {
-  value = aws_security_group.app.id
-}
-
 output "asg_name" {
-  value = aws_autoscaling_group.app.name
+  description = "The name of the Auto Scaling Group"
+  value       = aws_autoscaling_group.app.name
 }

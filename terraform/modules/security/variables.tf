@@ -8,7 +8,4 @@ variable "vpc_cidr" {
   type        = string
 }
 
-variable "app_sg_id" {
-  description = "Security group ID of the application instances (ASG)"
-  type        = string
-}
+

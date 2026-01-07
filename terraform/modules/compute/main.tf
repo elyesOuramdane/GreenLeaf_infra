@@ -7,9 +7,9 @@ resource "aws_iam_role" "ec2_ssm_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Effect = "Allow",
+      Effect    = "Allow",
       Principal = { Service = "ec2.amazonaws.com" },
-      Action = "sts:AssumeRole"
+      Action    = "sts:AssumeRole"
     }]
   })
 }
@@ -22,36 +22,6 @@ resource "aws_iam_role_policy_attachment" "ssm_core" {
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = "${var.environment}-ec2-profile"
   role = aws_iam_role.ec2_ssm_role.name
-}
-
-########################################
-# 2) Security Group App (pare-feu instance)
-########################################
-resource "aws_security_group" "app" {
-  name        = "${var.environment}-app-sg"
-  description = "Security group for app instances in ASG"
-  vpc_id      = var.vpc_id
-
-  # TEMPORAIRE MVP: on ouvre HTTP depuis le VPC
-  # plus tard: on remplacera par "depuis SG ALB uniquement"
-  ingress {
-    description = "HTTP from VPC (temporary until ALB SG is in place)"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["10.0.0.0/8"] # large, à resserrer quand vous fixez vos CIDR
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "${var.environment}-app-sg"
-  }
 }
 
 ########################################
@@ -76,11 +46,16 @@ resource "aws_launch_template" "app" {
     name = aws_iam_instance_profile.ec2_profile.name
   }
 
-  vpc_security_group_ids = [aws_security_group.app.id]
+  vpc_security_group_ids = var.security_group_ids
 
-  # user_data minimal : juste un log pour prouver que ça boot
+  # user_data minimal : installation de httpd pour test load balancer
   user_data = base64encode(<<-EOF
               #!/bin/bash
+              yum update -y
+              yum install -y httpd
+              systemctl start httpd
+              systemctl enable httpd
+              echo "<h1>Hello from GreenLeaf Dev!</h1><p>Instance ID: $(curl http://169.254.169.254/latest/meta-data/instance-id)</p>" > /var/www/html/index.html
               echo "BOOT OK $(date)" > /var/log/greenleaf_boot.log
               EOF
   )

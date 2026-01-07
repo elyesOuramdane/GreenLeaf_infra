@@ -39,3 +39,9 @@ variable "alb_target_group_arn" {
   description = "ALB Target Group ARN (optional)"
   default     = null
 }
+
+variable "security_group_ids" {
+  description = "List of security group IDs to attach to the EC2 instances"
+  type        = list(string)
+  default     = []
+}
