@@ -19,3 +19,9 @@ variable "single_nat_gateway" {
   type        = bool
   default     = false
 }
+
+variable "region" {
+  description = "AWS Region (needed for VPC Endpoints)"
+  type        = string
+  default     = "eu-west-3"
+}
