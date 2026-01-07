@@ -29,7 +29,7 @@ module "database" {
   db_password       = var.db_password
   db_name           = "greenleaf_dev"
   
-  instance_class    = "db.t3.micro" # Using micro for dev to save cost
+  instance_class    = "db.t3.small" # Using small for dev to save cost
   allocated_storage = 20
   multi_az          = false # No Multi-AZ for dev to save cost
 }
