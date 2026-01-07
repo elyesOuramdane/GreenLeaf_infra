@@ -3,9 +3,9 @@ variable "identifier" {
   type        = string
 }
 
-variable "subnet_ids" {
-  description = "List of subnet IDs for Redis"
-  type        = list(string)
+variable "elasticache_subnet_group_name" {
+  description = "Name of the Elasticache subnet group"
+  type        = string
 }
 
 variable "security_group_ids" {

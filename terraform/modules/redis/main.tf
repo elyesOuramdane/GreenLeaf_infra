@@ -1,8 +1,3 @@
-resource "aws_elasticache_subnet_group" "main" {
-  name       = "${var.identifier}-redis-subnet-group"
-  subnet_ids = var.subnet_ids
-}
-
 resource "aws_elasticache_cluster" "main" {
   count                = var.multi_az ? 0 : 1
   cluster_id           = "${var.identifier}-redis"
@@ -12,7 +7,7 @@ resource "aws_elasticache_cluster" "main" {
   parameter_group_name = "default.redis6.x"
   engine_version       = "6.2"
   port                 = 6379
-  subnet_group_name    = aws_elasticache_subnet_group.main.name
+  subnet_group_name    = var.elasticache_subnet_group_name
   security_group_ids   = var.security_group_ids
 
   tags = {
@@ -29,7 +24,7 @@ resource "aws_elasticache_replication_group" "main" {
   parameter_group_name = "default.redis6.x"
   automatic_failover_enabled = true
   
-  subnet_group_name    = aws_elasticache_subnet_group.main.name
+  subnet_group_name    = var.elasticache_subnet_group_name
   security_group_ids   = var.security_group_ids
   
   num_cache_clusters   = 2 # Primary + Replica
