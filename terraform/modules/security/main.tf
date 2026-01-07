@@ -1,13 +1,3 @@
-variable "vpc_id" {
-  description = "The VPC ID"
-  type        = string
-}
-
-variable "vpc_cidr" {
-  description = "The VPC CIDR"
-  type        = string
-}
-
 resource "aws_security_group" "rds" {
   name        = "greenleaf-rds-sg"
   description = "Security group for RDS instance"
@@ -31,8 +21,4 @@ resource "aws_security_group" "rds" {
   tags = {
     Name = "greenleaf-rds-sg"
   }
-}
-
-output "rds_sg_id" {
-  value = aws_security_group.rds.id
 }
