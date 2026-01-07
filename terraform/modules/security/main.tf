@@ -1,5 +1,5 @@
 resource "aws_security_group" "rds" {
-  name        = "greenleaf-rds-sg"
+  name        = "${var.identifier}-rds-sg"
   description = "Security group for RDS instance"
   vpc_id      = var.vpc_id
 
@@ -19,6 +19,6 @@ resource "aws_security_group" "rds" {
   }
 
   tags = {
-    Name = "greenleaf-rds-sg"
+    Name = "${var.identifier}-rds-sg"
   }
 }

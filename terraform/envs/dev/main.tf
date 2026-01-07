@@ -12,9 +12,10 @@ module "network" {
 
 
 module "security" {
-  source   = "../../modules/security"
-  vpc_id   = module.network.vpc_id
-  vpc_cidr = "10.0.0.0/16"
+  source     = "../../modules/security"
+  identifier = "greenleaf-dev"
+  vpc_id     = module.network.vpc_id
+  vpc_cidr   = "10.0.0.0/16"
 }
 
 module "database" {
