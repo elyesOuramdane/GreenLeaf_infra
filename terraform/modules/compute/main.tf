@@ -114,10 +114,8 @@ resource "aws_autoscaling_group" "app" {
     version = "$Latest"
   }
 
-  dynamic "target_group_arns" {
-    for_each = var.alb_target_group_arn == null ? [] : [var.alb_target_group_arn]
-    content  = target_group_arns.value
-  }
+  # If an ALB target group is provided, attach the ASG to it.
+  target_group_arns = var.alb_target_group_arn == null ? [] : [var.alb_target_group_arn]
 
   tag {
     key                 = "Name"

@@ -19,6 +19,7 @@ module "compute" {
 
 
 module "security" {
+  app_sg_id = module.compute.app_sg_id
   source   = "../../modules/security"
   vpc_id   = module.network.vpc_id
   vpc_cidr = "10.0.0.0/16"
