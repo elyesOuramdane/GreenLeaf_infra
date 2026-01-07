@@ -9,7 +9,8 @@
             "configureZshAsDefaultShell": true,
             "username": "root",
             "upgradePackages": false
-        }
+        },
+        "ghcr.io/devcontainers/features/aws-cli:1": {}
     },
     "remoteUser": "root",
     "customizations": {
