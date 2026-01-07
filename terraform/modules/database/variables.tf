@@ -8,7 +8,6 @@ variable "db_security_group_ids" {
   type        = list(string)
 }
 
-
 variable "db_subnet_group_name" {
   description = "The name of the DB subnet group"
   type        = string
