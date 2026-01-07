@@ -40,12 +40,23 @@ resource "aws_subnet" "private" {
   tags = {
     Name        = "${var.environment}-private-${count.index + 1}"
     Environment = var.environment
-    Type        = "Private"
+    Type        = "Private-App" # Renamed to fit 3-tier logic (App Layer)
   }
 }
 
-# NAT Gateway Logic
-# If single_nat_gateway = true, count = 1. Else count = length(AZs).
+resource "aws_subnet" "data" {
+  count             = length(var.availability_zones)
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = cidrsubnet(var.vpc_cidr, 8, count.index + 20)
+  availability_zone = var.availability_zones[count.index]
+
+  tags = {
+    Name        = "${var.environment}-data-${count.index + 1}"
+    Environment = var.environment
+    Type        = "Private-Data"
+  }
+}
+
 resource "aws_eip" "nat" {
   count  = var.single_nat_gateway ? 1 : length(var.availability_zones)
   domain = "vpc"
@@ -109,4 +120,26 @@ resource "aws_route_table_association" "private" {
   count          = length(var.availability_zones)
   subnet_id      = aws_subnet.private[count.index].id
   route_table_id = aws_route_table.private[count.index].id
+}
+
+resource "aws_route_table_association" "data" {
+  count          = length(var.availability_zones)
+  subnet_id      = aws_subnet.data[count.index].id
+  route_table_id = aws_route_table.private[count.index].id
+}
+
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = aws_vpc.main.id
+  service_name      = "com.amazonaws.${var.region}.s3"
+  vpc_endpoint_type = "Gateway"
+
+  route_table_ids = concat(
+    [aws_route_table.public.id],
+    aws_route_table.private[*].id
+  )
+
+  tags = {
+    Name        = "${var.environment}-s3-endpoint"
+    Environment = var.environment
+  }
 }
