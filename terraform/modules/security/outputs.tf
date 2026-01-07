@@ -17,3 +17,7 @@ output "efs_sg_id" {
 output "redis_sg_id" {
   value = aws_security_group.redis.id
 }
+
+output "opensearch_sg_id" {
+  value = aws_security_group.opensearch.id
+}

@@ -1,3 +1,6 @@
+data "aws_region" "current" {}
+data "aws_caller_identity" "current" {}
+
 module "network" {
   source             = "../../modules/network"
   environment        = "dev"
@@ -41,11 +44,11 @@ module "database" {
   identifier            = "greenleaf-dev"
   db_subnet_group_name  = module.network.db_subnet_group_name
   db_security_group_ids = [module.security.rds_sg_id]
-  
-  db_username       = var.db_username
-  db_password       = var.db_password
-  db_name           = "greenleaf_dev"
-  
+
+  db_username = var.db_username
+  db_password = var.db_password
+  db_name     = "greenleaf_dev"
+
   instance_class    = "db.t3.small" # Using small for dev to save cost
   allocated_storage = 20
   multi_az          = false # No Multi-AZ for dev to save cost
@@ -65,4 +68,15 @@ module "redis" {
   security_group_ids            = [module.security.redis_sg_id]
   node_type                     = "cache.t3.micro"
   multi_az                      = false
+}
+
+module "opensearch" {
+  source             = "../../modules/opensearch"
+  identifier         = "greenleaf-dev"
+  environment        = "dev"
+  region             = data.aws_region.current.name
+  account_id         = data.aws_caller_identity.current.account_id
+  subnet_ids         = module.network.subnet_data_ids # Use Data subnets for persistence
+  security_group_ids = [module.security.opensearch_sg_id]
+  instance_type      = "t3.small.search"
 }
