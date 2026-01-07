@@ -1,11 +1,3 @@
-resource "aws_db_subnet_group" "main" {
-  name       = "${var.identifier}-db-subnet-group"
-  subnet_ids = var.subnet_ids
-
-  tags = {
-    Name = "${var.identifier}-db-subnet-group"
-  }
-}
 
 
 resource "aws_db_instance" "main" {
@@ -21,7 +13,7 @@ resource "aws_db_instance" "main" {
   db_name  = var.db_name
 
   multi_az               = var.multi_az
-  db_subnet_group_name   = aws_db_subnet_group.main.name
+  db_subnet_group_name   = var.db_subnet_group_name
   vpc_security_group_ids = var.db_security_group_ids
   publicly_accessible    = false
   skip_final_snapshot    = true # For dev/training purposes to avoid hanging on destroy

@@ -110,3 +110,13 @@ resource "aws_route_table_association" "private" {
   subnet_id      = aws_subnet.private[count.index].id
   route_table_id = aws_route_table.private[count.index].id
 }
+
+resource "aws_db_subnet_group" "private" {
+  name       = "${var.environment}-db-subnet-group"
+  subnet_ids = aws_subnet.private[*].id
+
+  tags = {
+    Name        = "${var.environment}-db-subnet-group"
+    Environment = var.environment
+  }
+}

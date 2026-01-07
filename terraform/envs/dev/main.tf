@@ -21,7 +21,7 @@ module "database" {
   source = "../../modules/database"
 
   identifier            = "greenleaf-dev"
-  subnet_ids            = module.network.private_subnets
+  db_subnet_group_name  = module.network.db_subnet_group_name
   db_security_group_ids = [module.security.rds_sg_id]
   
   db_username       = var.db_username
