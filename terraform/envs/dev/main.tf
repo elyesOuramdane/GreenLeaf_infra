@@ -37,14 +37,14 @@ module "database" {
 module "efs" {
   source             = "../../modules/efs"
   identifier         = "greenleaf-dev"
-  subnet_ids         = module.network.private_subnets
+  subnet_ids         = module.network.subnet_private_ids
   security_group_ids = [module.security.efs_sg_id]
 }
 
 module "redis" {
   source             = "../../modules/redis"
   identifier         = "greenleaf-dev"
-  subnet_ids         = module.network.private_subnets
+  subnet_ids         = module.network.subnet_private_ids
   security_group_ids = [module.security.redis_sg_id]
   node_type          = "cache.t3.micro"
   multi_az           = false
