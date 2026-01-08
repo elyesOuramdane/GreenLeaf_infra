@@ -45,3 +45,8 @@ variable "security_group_ids" {
   type        = list(string)
   default     = []
 }
+
+variable "efs_id" {
+  description = "EFS File System ID to mount"
+  type        = string
+}

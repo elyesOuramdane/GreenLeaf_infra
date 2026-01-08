@@ -22,12 +22,13 @@ module "compute" {
   vpc_id             = module.network.vpc_id
   private_subnet_ids = module.network.subnet_private_ids
 
-  instance_type        = "t3.small"
+  instance_type        = "t3.medium"
   min_size             = 1
   desired_capacity     = 1
   max_size             = 2
   alb_target_group_arn = module.loadbalancer.target_group_arn
   security_group_ids   = [module.security.app_sg_id]
+  efs_id               = module.efs.id
 }
 
 
@@ -79,4 +80,29 @@ module "opensearch" {
   subnet_ids         = module.network.subnet_data_ids # Use Data subnets for persistence
   security_group_ids = [module.security.opensearch_sg_id]
   instance_type      = "t3.small.search"
+}
+
+resource "local_file" "ansible_vars" {
+  filename = "../../../ansible/inventory/group_vars/all.yml"
+  content  = <<EOT
+magento_db_host: "${module.database.endpoint}"
+magento_db_user: "${var.db_username}"
+magento_db_password: "${var.db_password}"
+magento_db_name: "greenleaf_dev"
+
+magento_redis_host: "${module.redis.hostname}"
+magento_opensearch_host: "https://${module.opensearch.endpoint}"
+
+magento_base_url: "http://${module.loadbalancer.alb_dns_name}/"
+
+magento_admin_firstname: "${var.magento_admin_firstname}"
+magento_admin_lastname: "${var.magento_admin_lastname}"
+magento_admin_email: "${var.magento_admin_email}"
+magento_admin_user: "${var.magento_admin_user}"
+magento_admin_password: "${var.magento_admin_password}"
+
+magento_language: "en_US"
+magento_currency: "USD"
+magento_timezone: "UTC"
+EOT
 }
