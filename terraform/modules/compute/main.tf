@@ -46,16 +46,36 @@ resource "aws_launch_template" "app" {
     name = aws_iam_instance_profile.ec2_profile.name
   }
 
+  block_device_mappings {
+    device_name = "/dev/xvda"
+    ebs {
+      volume_size           = 20
+      volume_type           = "gp3"
+      delete_on_termination = true
+    }
+  }
+
   vpc_security_group_ids = var.security_group_ids
 
   # user_data minimal : installation de httpd pour test load balancer
   user_data = base64encode(<<-EOF
               #!/bin/bash
               yum update -y
-              yum install -y httpd
+              yum install -y httpd amazon-ssm-agent
               systemctl start httpd
               systemctl enable httpd
-              echo "<h1>Hello from GreenLeaf Dev!</h1><p>Instance ID: $(curl http://169.254.169.254/latest/meta-data/instance-id)</p>" > /var/www/html/index.html
+              systemctl enable amazon-ssm-agent
+              systemctl restart amazon-ssm-agent
+              
+              echo "<h1>Hello from GreenLeaf Dev!</h1><p>Instance ID: $(curl -s http://169.254.169.254/latest/meta-data/instance-id)</p>" > /var/www/html/index.html
+
+              # Inject SSH Key for Ansible
+              mkdir -p /home/ec2-user/.ssh
+              echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCzkhT7FMGSdYo/uRRqOkzL49Menq++opyldvHtMBg51M2e0lTmDkGy5iZYpNoIk6rkLszzvA6PUuAU0fENjGUbimek2xFbKY7DF8fCthBOy239R32Mefo6BuosQYJxXJ76ROd1cgjk+Nd7dT7EWA21UTpBS0FtcoEvnVKi5ODAk5STt8qKUMIpP54Tsbl9xS8dxkPqOuToTTqo0LY2FEw2FyCS3P5GURPFoe7jpu4H+qihWKTDQTRUI+73ZXn1JtoZ3rhTeWyuXWIQS4xJhvqPYEvtuwOPFVWAl0IW/vNndBNck99aYZrONJCtfLRO9+4+UQhFrqrbJsQoEKXprNRBdbf85aiP4Cw07QJP59HWZs9ep4LaDrCsYjrqLqFshyo7OF7H+A2sXQmVEBokOSvgTJ4tbTUiDvokINmvnLawFp9xYcy9PsxJFrlzXrTyfTNliT1tGJHR5gp1LGKSSMSi/r8Yk/ivVHbRB1f/R9gMoYt2/O7ZvQSYlW2GC+/Zolc= root@2d647276d5af" >> /home/ec2-user/.ssh/authorized_keys
+              chown -R ec2-user:ec2-user /home/ec2-user/.ssh
+              chmod 700 /home/ec2-user/.ssh
+              chmod 600 /home/ec2-user/.ssh/authorized_keys
+              
               echo "BOOT OK $(date)" > /var/log/greenleaf_boot.log
               EOF
   )
