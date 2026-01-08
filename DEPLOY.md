@@ -11,7 +11,18 @@ aws configure  # Configure your access keys and region (eu-west-1)
 # Ensure your private key is at /root/.ssh/ansible_key
 ```
 
-### 2. Infrastructure (Terraform)
+### 2. Configure SSH Key
+Create a new SSH key and update the compute module to allow Ansible access.
+1. Generate the key:
+   ```bash
+   ssh-keygen -t ed25519 -f ~/.ssh/ansible_key
+   ```
+2. Update `terraform/modules/compute/main.tf`:
+   - Copy the content of the public key: `cat ~/.ssh/ansible_key.pub`
+   - Open `terraform/modules/compute/main.tf`.
+   - Replace the hardcoded public key in the `user_data` script (Search for `echo "ssh-ed25519 ...`) with your new public key.
+
+### 3. Infrastructure (Terraform)
 Launch the AWS infrastructure. This step will also **automatically generate** the Ansible variables.
 ```bash
 cd terraform/envs/dev
@@ -19,7 +30,7 @@ terraform init
 terraform apply -auto-approve
 ```
 
-### 3. Application (Ansible)
+### 4. Application (Ansible)
 Provision the servers and install Magento. The inventory is dynamic, and variables are pre-filled by Terraform.
 ```bash
 cd ../../../ansible

@@ -31,3 +31,6 @@ terraform.rc
 ansible/inventory/group_vars/all.yml
 ansible/auth.json
 
+/Resources
+/docs/images
+docs/documentation_technique_et_soutenance.md
