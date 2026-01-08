@@ -97,4 +97,15 @@ resource "aws_autoscaling_group" "app" {
     value               = "${var.environment}-asg"
     propagate_at_launch = true
   }
+
+  instance_refresh {
+    strategy = "Rolling"
+    preferences {
+      min_healthy_percentage = 50
+    }
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.ssm_core
+  ]
 }
