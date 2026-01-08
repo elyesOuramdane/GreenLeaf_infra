@@ -46,16 +46,34 @@ resource "aws_launch_template" "app" {
     name = aws_iam_instance_profile.ec2_profile.name
   }
 
+  block_device_mappings {
+    device_name = "/dev/xvda"
+    ebs {
+      volume_size           = 20
+      volume_type           = "gp3"
+      delete_on_termination = true
+    }
+  }
+
   vpc_security_group_ids = var.security_group_ids
 
   # user_data minimal : installation de httpd pour test load balancer
   user_data = base64encode(<<-EOF
               #!/bin/bash
               yum update -y
-              yum install -y httpd
+              yum install -y httpd amazon-ssm-agent
               systemctl start httpd
               systemctl enable httpd
-              echo "<h1>Hello from GreenLeaf Dev!</h1><p>Instance ID: $(curl http://169.254.169.254/latest/meta-data/instance-id)</p>" > /var/www/html/index.html
+              systemctl enable amazon-ssm-agent
+              systemctl restart amazon-ssm-agent
+              
+              # Inject SSH Key for Ansible
+              mkdir -p /home/ec2-user/.ssh
+              echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHPyQr3Qrbu0BxASnqK+Lpo0u52roHtcd+vY4HOIGzoZ root@f5d4a651f2e8" >> /home/ec2-user/.ssh/authorized_keys
+              chown -R ec2-user:ec2-user /home/ec2-user/.ssh
+              chmod 700 /home/ec2-user/.ssh
+              chmod 600 /home/ec2-user/.ssh/authorized_keys
+              
               echo "BOOT OK $(date)" > /var/log/greenleaf_boot.log
               EOF
   )
@@ -97,4 +115,15 @@ resource "aws_autoscaling_group" "app" {
     value               = "${var.environment}-asg"
     propagate_at_launch = true
   }
+
+  instance_refresh {
+    strategy = "Rolling"
+    preferences {
+      min_healthy_percentage = 50
+    }
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.ssm_core
+  ]
 }
