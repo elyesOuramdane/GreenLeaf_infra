@@ -28,5 +28,6 @@ terraform.rc
 
 # Ignore Ansible files
 *.deb
+ansible/inventory/group_vars/all.yml
 ansible/auth.json
 
