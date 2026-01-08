@@ -29,7 +29,7 @@ RUN curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubunt
     dpkg -i session-manager-plugin.deb && \
     rm session-manager-plugin.deb
 
-RUN pip3 install --no-cache-dir ansible --break-system-packages
+RUN pip3 install --no-cache-dir ansible "botocore[crt]" --break-system-packages
 
 RUN ansible-galaxy collection install amazon.aws community.mysql community.general
 
