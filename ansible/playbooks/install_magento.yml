@@ -8,6 +8,32 @@
     composer_home: "/var/www/.composer"
 
   tasks:
+    - name: Create swap file
+      become: yes
+      command: fallocate -l 4G /swapfile
+      args:
+        creates: /swapfile
+
+    - name: Set swap file permissions
+      become: yes
+      file:
+        path: /swapfile
+        mode: '0600'
+
+    - name: Setup swap space
+      become: yes
+      command: "{{ item }}"
+      with_items:
+        - mkswap /swapfile
+        - swapon /swapfile
+      when: ansible_swaptotal_mb < 1024
+
+    - name: Ensure swap is permanent
+      become: yes
+      lineinfile:
+        path: /etc/fstab
+        line: "/swapfile swap swap defaults 0 0"
+
     - name: Update system packages
       dnf:
         name: "*"
@@ -21,6 +47,7 @@
           - unzip
           - nc
           - acl
+          - mariadb105
         state: present
 
     - name: Install PHP 8.2 and extensions
@@ -111,6 +138,12 @@
       args:
         chdir: "{{ project_path }}"
 
+    - name: Grant Database Privileges
+      become: yes
+      shell: "mysql -h {{ magento_db_host | regex_replace(':.*', '') }} -P {{ magento_db_host | regex_replace('.*:', '') }} -u {{ magento_db_user }} -p'{{ magento_db_password }}' -e \"GRANT ALL PRIVILEGES ON {{ magento_db_name }}.* TO '{{ magento_db_user }}'@'%'; FLUSH PRIVILEGES;\""
+      register: db_grant
+      failed_when: false # Might fail if user doesn't have GRANT power, but usually admin on RDS does.
+      
     - name: Install Magento Application
       become: yes
       shell: |
@@ -157,7 +190,7 @@
       become: yes
       replace:
         path: "{{ project_path }}/vendor/magento/framework/App/ErrorHandler.php"
-        regexp: '(public function handler\(.*?\)\n\s*\{)'
+        regexp: '(public function handler\(.*?\)\s*\n\s*\{)'
         replace: "\\1\n        if ($errorNo == E_DEPRECATED || $errorNo == E_USER_DEPRECATED) return false;"
 
     - name: Deploy to Production Mode
@@ -174,14 +207,19 @@
         path: /var/www/html/index.html
         state: absent
 
-    - name: Disable Maintenance Mode
+    - name: Remove default index.html and disable welcome page
       become: yes
-      shell: "su -s /bin/bash apache -c 'bin/magento maintenance:disable'"
-      args:
-        chdir: "{{ project_path }}"
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "/var/www/html/index.html"
+        - "/etc/httpd/conf.d/welcome.conf"
 
-    - name: Configure Apache Vhost
+    - name: Configure Apache Vhost for Magento
+      become: yes
       copy:
+        dest: /etc/httpd/conf.d/magento.conf
         content: |
           <VirtualHost *:80>
               ServerName localhost
@@ -190,9 +228,23 @@
                   AllowOverride All
                   Require all granted
               </Directory>
+              ErrorLog /var/log/httpd/magento_error.log
+              CustomLog /var/log/httpd/magento_access.log combined
           </VirtualHost>
-        dest: /etc/httpd/conf.d/magento.conf
-      notify: Restart Apache
+
+    - name: Restart Apache
+      become: yes
+      systemd:
+        name: httpd
+        state: restarted
+
+    - name: Disable Maintenance Mode
+      become: yes
+      shell: "su -s /bin/bash apache -c 'bin/magento maintenance:disable'"
+      args:
+        chdir: "{{ project_path }}"
+
+
 
   handlers:
     - name: Restart Apache

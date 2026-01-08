@@ -67,6 +67,13 @@ resource "aws_launch_template" "app" {
               systemctl enable amazon-ssm-agent
               systemctl restart amazon-ssm-agent
               
+              # Add Swap Space (4GB)
+              fallocate -l 4G /swapfile
+              chmod 600 /swapfile
+              mkswap /swapfile
+              swapon /swapfile
+              echo "/swapfile swap swap defaults 0 0" >> /etc/fstab
+              
               # Inject SSH Key for Ansible
               mkdir -p /home/ec2-user/.ssh
               echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHPyQr3Qrbu0BxASnqK+Lpo0u52roHtcd+vY4HOIGzoZ root@f5d4a651f2e8" >> /home/ec2-user/.ssh/authorized_keys
@@ -100,7 +107,7 @@ resource "aws_autoscaling_group" "app" {
   vpc_zone_identifier = var.private_subnet_ids
 
   health_check_type         = var.alb_target_group_arn == null ? "EC2" : "ELB"
-  health_check_grace_period = 120
+  health_check_grace_period = 1800
 
   launch_template {
     id      = aws_launch_template.app.id
