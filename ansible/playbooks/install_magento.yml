@@ -125,13 +125,50 @@
         group: apache
         mode: '0755'
 
-    - name: Install Magento via Composer (This may take a while)
+    - name: Check if Magento is already installed
+      stat:
+        path: "{{ project_path }}/composer.json"
+      register: magento_composer_json
+
+    - name: Stop services to free memory for Composer
+      become: yes
+      service:
+        name: "{{ item }}"
+        state: stopped
+      loop:
+        - httpd
+        - php-fpm
+      when: not magento_composer_json.stat.exists
+
+    - name: Install Magento via Composer to temp directory (to avoid non-empty dir issue)
       become: yes
       shell: |
-        su -s /bin/bash apache -c "export COMPOSER_HOME='{{ composer_home }}' && composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition='{{ magento_version }}' . --no-interaction --ignore-platform-req=php"
-      args:
-        chdir: "{{ project_path }}"
-        creates: "{{ project_path }}/composer.json"
+        rm -rf /var/www/html/magento_install_tmp
+        mkdir -p /root/.composer
+        export COMPOSER_HOME='/root/.composer' 
+        export COMPOSER_MEMORY_LIMIT=-1
+        export COMPOSER_ALLOW_SUPERUSER=1
+        cp {{ composer_home }}/auth.json /root/.composer/auth.json
+        composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition='{{ magento_version }}' /var/www/html/magento_install_tmp --no-interaction --ignore-platform-req=php
+      when: not magento_composer_json.stat.exists
+
+    - name: Start services after Composer
+      become: yes
+      service:
+        name: "{{ item }}"
+        state: started
+      loop:
+        - httpd
+        - php-fpm
+      when: not magento_composer_json.stat.exists
+
+    - name: Move Magento files to project directory
+      become: yes
+      shell: |
+        cp -a /var/www/html/magento_install_tmp/. {{ project_path }}/
+        chown -R apache:apache {{ project_path }}
+        rm -rf /var/www/html/magento_install_tmp
+      when: not magento_composer_json.stat.exists
 
     - name: Set file permissions
       shell: "find var generated vendor pub/static pub/media app/etc -type f -exec chmod g+w {} + && find var generated vendor pub/static pub/media app/etc -type d -exec chmod g+ws {} + && chown -R apache:apache ."

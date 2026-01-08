@@ -22,12 +22,13 @@ module "compute" {
   vpc_id             = module.network.vpc_id
   private_subnet_ids = module.network.subnet_private_ids
 
-  instance_type        = "t3.small"
+  instance_type        = "t3.medium"
   min_size             = 1
   desired_capacity     = 1
   max_size             = 2
   alb_target_group_arn = module.loadbalancer.target_group_arn
   security_group_ids   = [module.security.app_sg_id]
+  efs_id               = module.efs.id
 }
 
 

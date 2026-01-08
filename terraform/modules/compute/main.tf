@@ -61,7 +61,7 @@ resource "aws_launch_template" "app" {
   user_data = base64encode(<<-EOF
               #!/bin/bash
               yum update -y
-              yum install -y httpd amazon-ssm-agent
+              yum install -y httpd amazon-ssm-agent amazon-efs-utils
               systemctl start httpd
               systemctl enable httpd
               systemctl enable amazon-ssm-agent
@@ -73,6 +73,12 @@ resource "aws_launch_template" "app" {
               mkswap /swapfile
               swapon /swapfile
               echo "/swapfile swap swap defaults 0 0" >> /etc/fstab
+              
+              # Mount EFS
+              mkdir -p /var/www/html/magento/pub/media
+              echo "${var.efs_id}:/ /var/www/html/magento/pub/media efs _netdev,tls 0 0" >> /etc/fstab
+              mount -a
+              chown -R ec2-user:ec2-user /var/www/html/magento/pub/media
               
               # Inject SSH Key for Ansible
               mkdir -p /home/ec2-user/.ssh
