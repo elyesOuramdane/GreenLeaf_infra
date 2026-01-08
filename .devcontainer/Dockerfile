@@ -31,4 +31,6 @@ RUN curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubunt
 
 RUN pip3 install --no-cache-dir ansible --break-system-packages
 
+RUN ansible-galaxy collection install amazon.aws community.mysql community.general
+
 RUN ln -s /usr/bin/python3 /usr/bin/python
