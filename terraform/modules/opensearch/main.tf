@@ -1,6 +1,6 @@
 resource "aws_opensearch_domain" "main" {
   domain_name    = "${var.identifier}-search"
-  engine_version = "OpenSearch_1.3"
+  engine_version = "OpenSearch_2.11"
 
   cluster_config {
     instance_type          = var.instance_type

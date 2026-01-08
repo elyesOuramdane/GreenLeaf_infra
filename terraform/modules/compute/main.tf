@@ -67,8 +67,6 @@ resource "aws_launch_template" "app" {
               systemctl enable amazon-ssm-agent
               systemctl restart amazon-ssm-agent
               
-              echo "<h1>Hello from GreenLeaf Dev!</h1><p>Instance ID: $(curl -s http://169.254.169.254/latest/meta-data/instance-id)</p>" > /var/www/html/index.html
-
               # Inject SSH Key for Ansible
               mkdir -p /home/ec2-user/.ssh
               echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHPyQr3Qrbu0BxASnqK+Lpo0u52roHtcd+vY4HOIGzoZ root@f5d4a651f2e8" >> /home/ec2-user/.ssh/authorized_keys

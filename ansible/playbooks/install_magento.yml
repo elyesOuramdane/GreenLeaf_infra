@@ -48,6 +48,24 @@
         state: started
         enabled: yes
 
+    - name: Configure PHP.ini for Magento 2
+      become: yes
+      lineinfile:
+        path: /etc/php.ini
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      loop:
+        - { regexp: '^memory_limit =', line: 'memory_limit = 2G' }
+        - { regexp: '^error_reporting =', line: 'error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT' }
+        - { regexp: '^max_execution_time =', line: 'max_execution_time = 1800' }
+        - { regexp: '^zlib.output_compression =', line: 'zlib.output_compression = On' }
+
+    - name: Restart PHP-FPM
+      become: yes
+      systemd:
+        name: php-fpm
+        state: restarted
+
     - name: Install Composer
       shell: |
         curl -sS https://getcomposer.org/installer | php
@@ -122,10 +140,25 @@
         --cache-backend=redis \
         --cache-backend-redis-server='{{ magento_redis_host }}' \
         --cache-backend-redis-port=6379 \
-        --cache-backend-redis-db=1"
+        --cache-backend-redis-db=1 \
+        --cleanup-database"
       args:
         chdir: "{{ project_path }}"
         creates: "{{ project_path }}/app/etc/env.php"
+
+    - name: Ensure broken patch is removed
+      become: yes
+      lineinfile:
+        path: "{{ project_path }}/vendor/magento/framework/App/ErrorHandler.php"
+        regexp: 'if \(\$errorNo == E_DEPRECATED.*'
+        state: absent
+
+    - name: Patch Magento ErrorHandler for PHP 8.2 compatibility
+      become: yes
+      replace:
+        path: "{{ project_path }}/vendor/magento/framework/App/ErrorHandler.php"
+        regexp: '(public function handler\(.*?\)\n\s*\{)'
+        replace: "\\1\n        if ($errorNo == E_DEPRECATED || $errorNo == E_USER_DEPRECATED) return false;"
 
     - name: Deploy to Production Mode
       become: yes
@@ -135,7 +168,17 @@
         su -s /bin/bash apache -c "bin/magento setup:static-content:deploy -f"
       args:
         chdir: "{{ project_path }}"
-      when: false # Disabled for faster install/debug in dev, enable if desired
+
+    - name: Remove placeholder index.html
+      file:
+        path: /var/www/html/index.html
+        state: absent
+
+    - name: Disable Maintenance Mode
+      become: yes
+      shell: "su -s /bin/bash apache -c 'bin/magento maintenance:disable'"
+      args:
+        chdir: "{{ project_path }}"
 
     - name: Configure Apache Vhost
       copy:
