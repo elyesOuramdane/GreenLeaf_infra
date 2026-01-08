@@ -71,7 +71,7 @@ resource "aws_launch_template" "app" {
 
               # Inject SSH Key for Ansible
               mkdir -p /home/ec2-user/.ssh
-              echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCzkhT7FMGSdYo/uRRqOkzL49Menq++opyldvHtMBg51M2e0lTmDkGy5iZYpNoIk6rkLszzvA6PUuAU0fENjGUbimek2xFbKY7DF8fCthBOy239R32Mefo6BuosQYJxXJ76ROd1cgjk+Nd7dT7EWA21UTpBS0FtcoEvnVKi5ODAk5STt8qKUMIpP54Tsbl9xS8dxkPqOuToTTqo0LY2FEw2FyCS3P5GURPFoe7jpu4H+qihWKTDQTRUI+73ZXn1JtoZ3rhTeWyuXWIQS4xJhvqPYEvtuwOPFVWAl0IW/vNndBNck99aYZrONJCtfLRO9+4+UQhFrqrbJsQoEKXprNRBdbf85aiP4Cw07QJP59HWZs9ep4LaDrCsYjrqLqFshyo7OF7H+A2sXQmVEBokOSvgTJ4tbTUiDvokINmvnLawFp9xYcy9PsxJFrlzXrTyfTNliT1tGJHR5gp1LGKSSMSi/r8Yk/ivVHbRB1f/R9gMoYt2/O7ZvQSYlW2GC+/Zolc= root@2d647276d5af" >> /home/ec2-user/.ssh/authorized_keys
+              echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHPyQr3Qrbu0BxASnqK+Lpo0u52roHtcd+vY4HOIGzoZ root@f5d4a651f2e8" >> /home/ec2-user/.ssh/authorized_keys
               chown -R ec2-user:ec2-user /home/ec2-user/.ssh
               chmod 700 /home/ec2-user/.ssh
               chmod 600 /home/ec2-user/.ssh/authorized_keys
