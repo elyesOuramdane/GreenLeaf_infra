@@ -82,7 +82,7 @@ resource "aws_launch_template" "app" {
               
               # Inject SSH Key for Ansible
               mkdir -p /home/ec2-user/.ssh
-              echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHPyQr3Qrbu0BxASnqK+Lpo0u52roHtcd+vY4HOIGzoZ root@f5d4a651f2e8" >> /home/ec2-user/.ssh/authorized_keys
+              echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICgqElibwio1CQI3vg0n8rBQ9qjJvq0lJjk8sky/Zm3v root@f5d4a651f2e8" >> /home/ec2-user/.ssh/authorized_keys
               chown -R ec2-user:ec2-user /home/ec2-user/.ssh
               chmod 700 /home/ec2-user/.ssh
               chmod 600 /home/ec2-user/.ssh/authorized_keys

@@ -6,6 +6,8 @@ module "network" {
   environment        = "dev"
   vpc_cidr           = "10.0.0.0/16"
   single_nat_gateway = true
+  availability_zones = ["eu-north-1a", "eu-north-1b"]
+  region             = "eu-north-1"
 }
 
 module "loadbalancer" {
