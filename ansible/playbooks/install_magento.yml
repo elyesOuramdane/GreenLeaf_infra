@@ -1,0 +1,290 @@
+---
+- name: Install Magento 2
+  hosts: env_dev
+  become: yes
+  vars:
+    magento_version: "2.4.7-p3"
+    project_path: "/var/www/html/magento"
+    composer_home: "/var/www/.composer"
+
+  tasks:
+    - name: Create swap file
+      become: yes
+      command: fallocate -l 4G /swapfile
+      args:
+        creates: /swapfile
+
+    - name: Set swap file permissions
+      become: yes
+      file:
+        path: /swapfile
+        mode: '0600'
+
+    - name: Setup swap space
+      become: yes
+      command: "{{ item }}"
+      with_items:
+        - mkswap /swapfile
+        - swapon /swapfile
+      when: ansible_swaptotal_mb < 1024
+
+    - name: Ensure swap is permanent
+      become: yes
+      lineinfile:
+        path: /etc/fstab
+        line: "/swapfile swap swap defaults 0 0"
+
+    - name: Update system packages
+      dnf:
+        name: "*"
+        state: latest
+
+    - name: Install Apache and tools
+      dnf:
+        name:
+          - httpd
+          - git
+          - unzip
+          - nc
+          - acl
+          - mariadb105
+        state: present
+
+    - name: Install PHP 8.2 and extensions
+      dnf:
+        name:
+          - php
+          - php-cli
+          - php-fpm
+          - php-mysqlnd
+          - php-opcache
+          - php-xml
+          - php-gd
+          - php-soap
+          - php-mbstring
+          - php-json
+          - php-intl
+          - php-bcmath
+          - php-zip
+          - php-process
+        state: present
+
+    - name: Start and enable Apache
+      service:
+        name: httpd
+        state: started
+        enabled: yes
+
+    - name: Configure PHP.ini for Magento 2
+      become: yes
+      lineinfile:
+        path: /etc/php.ini
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      loop:
+        - { regexp: '^memory_limit =', line: 'memory_limit = 2G' }
+        - { regexp: '^error_reporting =', line: 'error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT' }
+        - { regexp: '^max_execution_time =', line: 'max_execution_time = 1800' }
+        - { regexp: '^zlib.output_compression =', line: 'zlib.output_compression = On' }
+
+    - name: Restart PHP-FPM
+      become: yes
+      systemd:
+        name: php-fpm
+        state: restarted
+
+    - name: Install Composer
+      shell: |
+        curl -sS https://getcomposer.org/installer | php
+        mv composer.phar /usr/local/bin/composer
+        chmod +x /usr/local/bin/composer
+      args:
+        creates: /usr/local/bin/composer
+
+    - name: Create Composer directory
+      file:
+        path: "{{ composer_home }}"
+        state: directory
+        owner: apache
+        group: apache
+        mode: '0755'
+
+    - name: Copy auth.json
+      copy:
+        src: ../auth.json
+        dest: "{{ composer_home }}/auth.json"
+        owner: apache
+        group: apache
+        mode: '0600'
+
+    - name: Create project directory
+      file:
+        path: "{{ project_path }}"
+        state: directory
+        owner: apache
+        group: apache
+        mode: '0755'
+
+    - name: Check if Magento is already installed
+      stat:
+        path: "{{ project_path }}/composer.json"
+      register: magento_composer_json
+
+    - name: Stop services to free memory for Composer
+      become: yes
+      service:
+        name: "{{ item }}"
+        state: stopped
+      loop:
+        - httpd
+        - php-fpm
+      when: not magento_composer_json.stat.exists
+
+    - name: Install Magento via Composer to temp directory (to avoid non-empty dir issue)
+      become: yes
+      shell: |
+        rm -rf /var/www/html/magento_install_tmp
+        mkdir -p /root/.composer
+        export COMPOSER_HOME='/root/.composer' 
+        export COMPOSER_MEMORY_LIMIT=-1
+        export COMPOSER_ALLOW_SUPERUSER=1
+        cp {{ composer_home }}/auth.json /root/.composer/auth.json
+        composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition='{{ magento_version }}' /var/www/html/magento_install_tmp --no-interaction --ignore-platform-req=php
+      when: not magento_composer_json.stat.exists
+
+    - name: Start services after Composer
+      become: yes
+      service:
+        name: "{{ item }}"
+        state: started
+      loop:
+        - httpd
+        - php-fpm
+      when: not magento_composer_json.stat.exists
+
+    - name: Move Magento files to project directory
+      become: yes
+      shell: |
+        cp -a /var/www/html/magento_install_tmp/. {{ project_path }}/
+        chown -R apache:apache {{ project_path }}
+        rm -rf /var/www/html/magento_install_tmp
+      when: not magento_composer_json.stat.exists
+
+    - name: Set file permissions
+      shell: "find var generated vendor pub/static pub/media app/etc -type f -exec chmod g+w {} + && find var generated vendor pub/static pub/media app/etc -type d -exec chmod g+ws {} + && chown -R apache:apache ."
+      args:
+        chdir: "{{ project_path }}"
+
+    - name: Grant Database Privileges
+      become: yes
+      shell: "mysql -h {{ magento_db_host | regex_replace(':.*', '') }} -P {{ magento_db_host | regex_replace('.*:', '') }} -u {{ magento_db_user }} -p'{{ magento_db_password }}' -e \"GRANT ALL PRIVILEGES ON {{ magento_db_name }}.* TO '{{ magento_db_user }}'@'%'; FLUSH PRIVILEGES;\""
+      register: db_grant
+      failed_when: false # Might fail if user doesn't have GRANT power, but usually admin on RDS does.
+      
+    - name: Install Magento Application
+      become: yes
+      shell: |
+        su -s /bin/bash apache -c "bin/magento setup:install \
+        --base-url='{{ magento_base_url }}' \
+        --db-host='{{ magento_db_host }}' \
+        --db-name='{{ magento_db_name }}' \
+        --db-user='{{ magento_db_user }}' \
+        --db-password='{{ magento_db_password }}' \
+        --admin-firstname='{{ magento_admin_firstname }}' \
+        --admin-lastname='{{ magento_admin_lastname }}' \
+        --admin-email='{{ magento_admin_email }}' \
+        --admin-user='{{ magento_admin_user }}' \
+        --admin-password='{{ magento_admin_password }}' \
+        --language='{{ magento_language }}' \
+        --currency='{{ magento_currency }}' \
+        --timezone='{{ magento_timezone }}' \
+        --use-rewrites=1 \
+        --backend-frontname=admin \
+        --search-engine=opensearch \
+        --opensearch-host='{{ magento_opensearch_host }}' \
+        --opensearch-port=443 \
+        --session-save=redis \
+        --session-save-redis-host='{{ magento_redis_host }}' \
+        --session-save-redis-port=6379 \
+        --session-save-redis-db=0 \
+        --cache-backend=redis \
+        --cache-backend-redis-server='{{ magento_redis_host }}' \
+        --cache-backend-redis-port=6379 \
+        --cache-backend-redis-db=1 \
+        --cleanup-database"
+      args:
+        chdir: "{{ project_path }}"
+        creates: "{{ project_path }}/app/etc/env.php"
+
+    - name: Ensure broken patch is removed
+      become: yes
+      lineinfile:
+        path: "{{ project_path }}/vendor/magento/framework/App/ErrorHandler.php"
+        regexp: 'if \(\$errorNo == E_DEPRECATED.*'
+        state: absent
+
+    - name: Patch Magento ErrorHandler for PHP 8.2 compatibility
+      become: yes
+      replace:
+        path: "{{ project_path }}/vendor/magento/framework/App/ErrorHandler.php"
+        regexp: '(public function handler\(.*?\)\s*\n\s*\{)'
+        replace: "\\1\n        if ($errorNo == E_DEPRECATED || $errorNo == E_USER_DEPRECATED) return false;"
+
+    - name: Deploy to Production Mode
+      become: yes
+      shell: |
+        su -s /bin/bash apache -c "bin/magento deploy:mode:set production --skip-compilation"
+        su -s /bin/bash apache -c "bin/magento setup:di:compile"
+        su -s /bin/bash apache -c "bin/magento setup:static-content:deploy -f"
+      args:
+        chdir: "{{ project_path }}"
+
+    - name: Remove placeholder index.html
+      file:
+        path: /var/www/html/index.html
+        state: absent
+
+    - name: Remove default index.html and disable welcome page
+      become: yes
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "/var/www/html/index.html"
+        - "/etc/httpd/conf.d/welcome.conf"
+
+    - name: Configure Apache Vhost for Magento
+      become: yes
+      copy:
+        dest: /etc/httpd/conf.d/magento.conf
+        content: |
+          <VirtualHost *:80>
+              ServerName localhost
+              DocumentRoot {{ project_path }}/pub
+              <Directory {{ project_path }}/pub>
+                  AllowOverride All
+                  Require all granted
+              </Directory>
+              ErrorLog /var/log/httpd/magento_error.log
+              CustomLog /var/log/httpd/magento_access.log combined
+          </VirtualHost>
+
+    - name: Restart Apache
+      become: yes
+      systemd:
+        name: httpd
+        state: restarted
+
+    - name: Disable Maintenance Mode
+      become: yes
+      shell: "su -s /bin/bash apache -c 'bin/magento maintenance:disable'"
+      args:
+        chdir: "{{ project_path }}"
+
+
+
+  handlers:
+    - name: Restart Apache
+      service:
+        name: httpd
+        state: restarted

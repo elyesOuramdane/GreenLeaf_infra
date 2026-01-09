@@ -1,0 +1,19 @@
+# Infrastructure Endpoints (From Terraform Output)
+magento_db_host: "greenleaf-dev-db.claw2q6eohy7.eu-west-1.rds.amazonaws.com"
+magento_db_user: "admin"
+magento_db_password: "<AJOUTER_MDP>" # Change this!
+magento_db_name: "greenleaf_dev"
+
+magento_redis_host: "greenleaf-dev-redis.qi2vbh.0001.euw1.cache.amazonaws.com"
+magento_opensearch_host: "vpc-greenleaf-dev-search-wy3hcpazhglff5uv5xow3gzciq.eu-west-1.es.amazonaws.com"
+
+# Magento Configuration
+magento_admin_firstname: "Admin"
+magento_admin_lastname: "User"
+magento_admin_email: "admin@greenleaf.com"
+magento_admin_user: "admin"
+magento_admin_password: "<AJOUTER_MDP>" # Change this!
+magento_base_url: "http://dev-alb-417150223.eu-west-1.elb.amazonaws.com/"
+magento_language: "en_US"
+magento_currency: "EUR"
+magento_timezone: "Europe/Paris"

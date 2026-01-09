@@ -25,3 +25,12 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+# Ignore Ansible files
+*.deb
+ansible/inventory/group_vars/all.yml
+ansible/auth.json
+
+/Resources
+/docs/images
+docs/documentation_technique_et_soutenance.md

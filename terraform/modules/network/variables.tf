@@ -11,7 +11,7 @@ variable "vpc_cidr" {
 variable "availability_zones" {
   description = "List of availability zones"
   type        = list(string)
-  default     = ["eu-west-3a", "eu-west-3b"]
+  default     = ["eu-west-1a", "eu-west-1b"]
 }
 
 variable "single_nat_gateway" {
@@ -23,5 +23,5 @@ variable "single_nat_gateway" {
 variable "region" {
   description = "AWS Region (needed for VPC Endpoints)"
   type        = string
-  default     = "eu-west-3"
+  default     = "eu-west-1"
 }

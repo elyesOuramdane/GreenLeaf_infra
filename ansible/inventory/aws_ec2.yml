@@ -1,0 +1,17 @@
+plugin: aws_ec2
+regions:
+  - eu-north-1
+profile: default
+hostnames:
+  - instance-id
+filters:
+  tag:Project: GreenLeaf
+  tag:Environment: dev
+  instance-state-name: running
+keyed_groups:
+  - key: tags.Name
+    prefix: tag_Name
+  - key: tags.Environment
+    prefix: env
+compose:
+  # Connection parameters moved to group_vars/env_dev.yml
